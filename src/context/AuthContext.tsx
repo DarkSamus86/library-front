@@ -35,7 +35,7 @@ export function useAuth() {
 function parseUserIdFromToken(token: string): number | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.sub ? Number(payload.sub) : null
+    return payload.userId ?? (payload.sub ? Number(payload.sub) : null)
   } catch {
     return null
   }
