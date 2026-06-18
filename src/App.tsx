@@ -10,6 +10,9 @@ import BookDetail from './pages/BookDetail'
 import CreateBook from './pages/CreateBook'
 import Profile from './pages/Profile'
 import AdminDashboard from './pages/AdminDashboard'
+import AdminBooks from './pages/AdminBooks'
+import AdminBookEdit from './pages/AdminBookEdit'
+import AdminBookPrices from './pages/AdminBookPrices'
 
 export default function App() {
   return (
@@ -57,6 +60,30 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/books"
+              element={
+                <AdminRoute>
+                  <AdminBooks />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/books/:id/edit"
+              element={
+                <AdminRoute>
+                  <AdminBookEdit />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/books/:id/prices"
+              element={
+                <AdminRoute>
+                  <AdminBookPrices />
                 </AdminRoute>
               }
             />

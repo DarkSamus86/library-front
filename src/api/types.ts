@@ -122,8 +122,23 @@ export interface AdminUserResponse {
   updatedAt: string
 }
 
+export interface BookPricesRequest {
+  price: number
+  rentalPrice?: number
+  depositAmount?: number
+}
+
+export interface BookImportRequest {
+  query?: string
+  title?: string
+  author?: string
+  limit?: number
+}
+
 export interface ErrorResponse {
   status: number
   message: string
   timestamp: string
 }
+
+export type ValidationErrors = Record<string, string>

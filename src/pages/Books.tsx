@@ -9,6 +9,7 @@ export default function Books() {
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
   const [searchTitle, setSearchTitle] = useState('')
+  const [sort, setSort] = useState('title,asc')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -22,7 +23,7 @@ export default function Books() {
         setTotalPages(1)
         setTotalElements(data.length)
       } else {
-        const { data } = await getBooksPaginated(page)
+        const { data } = await getBooksPaginated(page, 10, sort)
         setBooks(data.content)
         setTotalPages(data.totalPages)
         setTotalElements(data.totalElements)
@@ -36,7 +37,7 @@ export default function Books() {
 
   useEffect(() => {
     loadBooks()
-  }, [page])
+  }, [page, sort])
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -67,6 +68,22 @@ export default function Books() {
           </button>
         )}
       </form>
+
+      {!searchTitle && (
+        <div className="sort-controls">
+          <label>
+            Sort by:
+            <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(0); }}>
+              <option value="title,asc">Title (A-Z)</option>
+              <option value="title,desc">Title (Z-A)</option>
+              <option value="price,asc">Price (Low-High)</option>
+              <option value="price,desc">Price (High-Low)</option>
+              <option value="publishedYear,desc">Year (Newest)</option>
+              <option value="publishedYear,asc">Year (Oldest)</option>
+            </select>
+          </label>
+        </div>
+      )}
 
       {error && <div className="error">{error}</div>}
 

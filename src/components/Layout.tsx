@@ -12,6 +12,7 @@ export default function Layout() {
           <Link to="/books">Books</Link>
           {isAuthenticated && <Link to="/profile">Profile</Link>}
           {isAdmin && <Link to="/admin">Admin</Link>}
+          {isAdmin && <Link to="/admin/books">Manage Books</Link>}
         </div>
         <div className="navbar-auth">
           {isAuthenticated ? (

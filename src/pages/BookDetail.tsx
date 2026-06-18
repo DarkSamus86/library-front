@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getBookById, updateBook, softDeleteBook, hardDeleteBook } from '../api/books'
 import { useAuth } from '../context/AuthContext'
 import type { BookResponse, UpdateBookRequest } from '../api/types'
+import { parseErrorMessage, parseValidationErrors, type ValidationErrors } from '../utils/errors'
 
 export default function BookDetail() {
   const { id } = useParams<{ id: string }>()
@@ -11,6 +12,7 @@ export default function BookDetail() {
   const [book, setBook] = useState<BookResponse | null>(null)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState<UpdateBookRequest>({})
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -29,7 +31,7 @@ export default function BookDetail() {
           publishedYear: data.publishedYear,
         })
       })
-      .catch(() => setError('Book not found'))
+      .catch((err) => setError(parseErrorMessage(err)))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -39,17 +41,29 @@ export default function BookDetail() {
       ...prev,
       [name]: type === 'number' ? (value === '' ? undefined : Number(value)) : value,
     }))
+    setValidationErrors((prev: ValidationErrors) => {
+      const next = { ...prev }
+      delete next[name]
+      return next
+    })
   }
 
   async function handleUpdate(e: React.FormEvent) {
     e.preventDefault()
     if (!book) return
+    setError('')
+    setValidationErrors({})
     try {
       const { data } = await updateBook(book.id, editForm)
       setBook(data)
       setEditing(false)
-    } catch {
-      setError('Failed to update book')
+    } catch (err) {
+      const fieldErrors = parseValidationErrors(err)
+      if (fieldErrors) {
+        setValidationErrors(fieldErrors)
+      } else {
+        setError(parseErrorMessage(err))
+      }
     }
   }
 
@@ -58,8 +72,8 @@ export default function BookDetail() {
     try {
       await softDeleteBook(book.id)
       navigate('/books')
-    } catch {
-      setError('Failed to delete book')
+    } catch (err) {
+      setError(parseErrorMessage(err))
     }
   }
 
@@ -68,8 +82,8 @@ export default function BookDetail() {
     try {
       await hardDeleteBook(book.id)
       navigate('/books')
-    } catch {
-      setError('Failed to delete book')
+    } catch (err) {
+      setError(parseErrorMessage(err))
     }
   }
 
@@ -86,6 +100,9 @@ export default function BookDetail() {
           <label>
             Title
             <input name="title" value={editForm.title ?? ''} onChange={handleChange} required />
+            {validationErrors.title && (
+              <span className="field-error">{validationErrors.title}</span>
+            )}
           </label>
           <label>
             Description
@@ -94,6 +111,9 @@ export default function BookDetail() {
               value={editForm.description ?? ''}
               onChange={handleChange}
             />
+            {validationErrors.description && (
+              <span className="field-error">{validationErrors.description}</span>
+            )}
           </label>
           <label>
             Price
@@ -105,6 +125,9 @@ export default function BookDetail() {
               onChange={handleChange}
               required
             />
+            {validationErrors.price && (
+              <span className="field-error">{validationErrors.price}</span>
+            )}
           </label>
           <label>
             Rental Price
@@ -115,6 +138,9 @@ export default function BookDetail() {
               value={editForm.rentalPrice ?? ''}
               onChange={handleChange}
             />
+            {validationErrors.rentalPrice && (
+              <span className="field-error">{validationErrors.rentalPrice}</span>
+            )}
           </label>
           <label>
             Deposit Amount
@@ -125,6 +151,9 @@ export default function BookDetail() {
               value={editForm.depositAmount ?? ''}
               onChange={handleChange}
             />
+            {validationErrors.depositAmount && (
+              <span className="field-error">{validationErrors.depositAmount}</span>
+            )}
           </label>
           <label>
             Stock Count
@@ -135,6 +164,9 @@ export default function BookDetail() {
               onChange={handleChange}
               required
             />
+            {validationErrors.stockCount && (
+              <span className="field-error">{validationErrors.stockCount}</span>
+            )}
           </label>
           <label>
             Published Year
@@ -144,6 +176,9 @@ export default function BookDetail() {
               value={editForm.publishedYear ?? ''}
               onChange={handleChange}
             />
+            {validationErrors.publishedYear && (
+              <span className="field-error">{validationErrors.publishedYear}</span>
+            )}
           </label>
           <div className="form-actions">
             <button type="submit">Save</button>
@@ -174,6 +209,7 @@ export default function BookDetail() {
       {isAdmin && (
         <div className="admin-actions">
           <button onClick={() => setEditing(true)}>Edit</button>
+          <button onClick={() => navigate(`/admin/books/${book.id}/prices`)}>Update Prices</button>
           <button className="btn-danger" onClick={handleSoftDelete}>
             Soft Delete
           </button>

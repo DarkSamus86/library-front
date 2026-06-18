@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { createBook } from '../api/books'
-import type { CreateBookRequest } from '../api/types'
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { getBookById, updateBook } from '../api/books'
+import type { UpdateBookRequest } from '../api/types'
 import { parseErrorMessage, parseValidationErrors, type ValidationErrors } from '../utils/errors'
 
-export default function CreateBook() {
+export default function AdminBookEdit() {
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [form, setForm] = useState<CreateBookRequest>({
+  const [form, setForm] = useState<UpdateBookRequest>({
     title: '',
     description: '',
     isbn: '',
@@ -20,12 +21,33 @@ export default function CreateBook() {
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (!id) return
+    getBookById(Number(id))
+      .then(({ data }) => {
+        setForm({
+          title: data.title,
+          description: data.description,
+          isbn: '',
+          price: data.price,
+          rentalPrice: data.rentalPrice,
+          depositAmount: data.depositAmount,
+          stockCount: data.stockCount,
+          publishedYear: data.publishedYear,
+          coverUrl: '',
+        })
+      })
+      .catch((err) => setError(parseErrorMessage(err)))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value, type } = e.target
     setForm((prev) => ({
       ...prev,
-      [name]: type === 'number' ? (value === '' ? 0 : Number(value)) : value,
+      [name]: type === 'number' ? (value === '' ? undefined : Number(value)) : value,
     }))
     setValidationErrors((prev: ValidationErrors) => {
       const next = { ...prev }
@@ -36,12 +58,13 @@ export default function CreateBook() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!id) return
     setError('')
     setValidationErrors({})
     setSubmitting(true)
     try {
-      const { data } = await createBook(form)
-      navigate(`/books/${data.id}`)
+      await updateBook(Number(id), form)
+      navigate(`/books/${id}`)
     } catch (err) {
       const fieldErrors = parseValidationErrors(err)
       if (fieldErrors) {
@@ -54,26 +77,34 @@ export default function CreateBook() {
     }
   }
 
+  if (loading) return <div className="loading">Loading...</div>
+  if (error && !id) return <div className="error">{error}</div>
+
   return (
     <div className="form-page">
-      <h1>Create Book</h1>
+      <h1>Edit Book</h1>
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <label>
           Title *
-          <input name="title" value={form.title} onChange={handleChange} required />
+          <input name="title" value={form.title ?? ''} onChange={handleChange} required />
           {validationErrors.title && <span className="field-error">{validationErrors.title}</span>}
         </label>
         <label>
           Description
-          <input name="description" value={form.description} onChange={handleChange} />
+          <textarea
+            name="description"
+            value={form.description ?? ''}
+            onChange={handleChange}
+            rows={3}
+          />
           {validationErrors.description && (
             <span className="field-error">{validationErrors.description}</span>
           )}
         </label>
         <label>
           ISBN
-          <input name="isbn" value={form.isbn} onChange={handleChange} maxLength={50} />
+          <input name="isbn" value={form.isbn ?? ''} onChange={handleChange} maxLength={50} />
           {validationErrors.isbn && <span className="field-error">{validationErrors.isbn}</span>}
         </label>
         <label>
@@ -83,7 +114,7 @@ export default function CreateBook() {
             type="number"
             step="0.01"
             min="0"
-            value={form.price}
+            value={form.price ?? ''}
             onChange={handleChange}
             required
           />
@@ -96,7 +127,7 @@ export default function CreateBook() {
             type="number"
             step="0.01"
             min="0"
-            value={form.rentalPrice}
+            value={form.rentalPrice ?? ''}
             onChange={handleChange}
           />
           {validationErrors.rentalPrice && (
@@ -110,7 +141,7 @@ export default function CreateBook() {
             type="number"
             step="0.01"
             min="0"
-            value={form.depositAmount}
+            value={form.depositAmount ?? ''}
             onChange={handleChange}
           />
           {validationErrors.depositAmount && (
@@ -123,7 +154,7 @@ export default function CreateBook() {
             name="stockCount"
             type="number"
             min="0"
-            value={form.stockCount}
+            value={form.stockCount ?? ''}
             onChange={handleChange}
             required
           />
@@ -138,7 +169,7 @@ export default function CreateBook() {
             type="number"
             min="1000"
             max="2099"
-            value={form.publishedYear}
+            value={form.publishedYear ?? ''}
             onChange={handleChange}
           />
           {validationErrors.publishedYear && (
@@ -147,14 +178,19 @@ export default function CreateBook() {
         </label>
         <label>
           Cover URL
-          <input name="coverUrl" value={form.coverUrl} onChange={handleChange} />
+          <input name="coverUrl" value={form.coverUrl ?? ''} onChange={handleChange} />
           {validationErrors.coverUrl && (
             <span className="field-error">{validationErrors.coverUrl}</span>
           )}
         </label>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Creating...' : 'Create Book'}
-        </button>
+        <div className="form-actions">
+          <button type="submit" disabled={submitting}>
+            {submitting ? 'Saving...' : 'Save'}
+          </button>
+          <button type="button" onClick={() => navigate(-1)}>
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   )
